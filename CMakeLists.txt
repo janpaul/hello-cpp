@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
+include(FetchContent)
 
 project(HelloWorld LANGUAGES CXX)
 
