@@ -20,43 +20,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install deps (Ubuntu)
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y cmake ninja-build
-
       - name: Install deps (macOS)
         if: matrix.os == 'macos-latest'
         run: |
           brew update
           brew install cmake ninja sdl3
 
-      # Windows + Linux : use vcpkg for SDL3 and configure CMake with the vcpkg toolchain
-      - name: Setup vcpkg (Linux)
+      - name: Install deps (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
-        uses: lukka/run-vcpkg@v11
-        with:
-          vcpkgArguments: 'install sdl3:x64-linux'
-          triplet: x64-linux
-      - name: Setup vcpkg (Windows)
-        if: matrix.os == 'windows-latest'
-        uses: lukka/run-vcpkg@v11
-        with:
-          vcpkgArguments: 'install sdl3:x64-windows'
-          triplet: x64-windows
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build
 
       - name: Install deps (Windows)
         if: matrix.os == 'windows-latest'
-        run: |
-          vcpkg install sdl3:x64-windows
+        run: choco install -y cmake ninja git
 
       - name: Configure (CMake + Ninja)
-        run: |
-          cmake -B build -S . -G Ninja \
-            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-            ${{ (matrix.os == 'ubuntu-latest') && format('-DCMAKE_TOOLCHAIN_FILE={0}/scripts/buildsystems/vcpkg.cmake', env.VCPKG_ROOT) || '' }} \
-            ${{ (matrix.os == 'windows-latest') && format('-DCMAKE_TOOLCHAIN_FILE={0}/scripts/buildsystems/vcpkg.cmake', env.VCPKG_ROOT) || '' }}
+        run: cmake -B build -S . -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
 
       - name: Build
         run: cmake --build build --config ${{ matrix.build_type }}

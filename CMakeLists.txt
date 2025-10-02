@@ -7,6 +7,15 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(SDL3 CONFIG REQUIRED)
+if (NOT SDL3_FOUND)
+    message(STATUS "SDL3 not found, fetching from source…")
+    FetchContent_Declare(
+            SDL3
+            GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
+            GIT_TAG        release-3.2.0
+    )
+    FetchContent_MakeAvailable(SDL3)
+endif()
 
 add_executable(
         hello
