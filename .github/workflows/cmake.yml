@@ -20,19 +20,25 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install deps (macOS)
+      - name: Install dependencies (macOS)
         if: matrix.os == 'macos-latest'
         run: |
           brew update
           brew install cmake ninja sdl3
 
-      - name: Install deps (Ubuntu)
+      - name: Install dependencies (Linux)
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake ninja-build
+          sudo apt-get install -y cmake ninja-build pkg-config \
+            libasound2-dev libpulse-dev libudev-dev \
+            libx11-dev libxext-dev libxi-dev libxfixes-dev \
+            libxrandr-dev libxcursor-dev libxinerama-dev \
+            libwayland-dev wayland-protocols libxkbcommon-dev \
+            libdrm-dev libgbm-dev \
+            libgl1-mesa-dev libegl1-mesa-dev libgles2-mesa-dev
 
-      - name: Install deps (Windows)
+      - name: Install dependencies (Windows)
         if: matrix.os == 'windows-latest'
         run: choco install -y cmake ninja git
 
