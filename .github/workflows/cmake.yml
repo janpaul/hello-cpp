@@ -8,22 +8,45 @@ on:
 
 jobs:
   build:
+    name: ${{ matrix.os }} • ${{ matrix.build_type }}
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ ubuntu-latest, macos-latest, windows-latest ]
+        build_type: [Release]
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: Install deps (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake ninja-build libsdl3-dev
 
-      - name: Configure CMake
-        run: cmake -B build -S . -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Install deps (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew update
+          brew install cmake ninja sdl3
+
+      # Windows: use vcpkg for SDL3 and configure CMake met de vcpkg toolchain
+      - name: Setup vcpkg (Windows)
+        if: matrix.os == 'windows-latest'
+        uses: microsoft/setup-vcpkg@v1
+        with:
+          runVcpkgInstall: false
+
+      - name: Install deps (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          vcpkg install sdl3:x64-windows
+
+      - name: Configure (CMake + Ninja)
+        run: |
+          cmake -B build -S . -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ${{ (matrix.os == 'windows-latest') && format('-DCMAKE_TOOLCHAIN_FILE={0}/scripts/buildsystems/vcpkg.cmake', env.VCPKG_ROOT) || '' }}
 
       - name: Build
-        run: cmake --build build
+        run: cmake --build build --config ${{ matrix.build_type }}
