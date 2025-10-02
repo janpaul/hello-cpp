@@ -35,9 +35,10 @@ jobs:
       # Windows: use vcpkg for SDL3 and configure CMake met de vcpkg toolchain
       - name: Setup vcpkg (Windows)
         if: matrix.os == 'windows-latest'
-        uses: microsoft/vcpkg-action@v1
+        uses: lukka/run-vcpkg@v11
         with:
-          runVcpkgInstall: false
+          vcpkgArguments: 'install sdl3:x64-windows'
+          triplet: x64-windows
 
       - name: Install deps (Windows)
         if: matrix.os == 'windows-latest'
