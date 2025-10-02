@@ -71,7 +71,7 @@ int main() try {
         {SDLK_Q, [&running] { running = false; }},
     };
 
-    const auto aColor{hello::toFColor(200, 100, 50)};
+    constexpr auto aColor{hello::toFColor(200, 100, 50)};
 
     while (running) {
         SDL_Event e;
