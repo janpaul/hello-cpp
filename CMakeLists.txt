@@ -6,13 +6,17 @@ project(HelloWorld LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(SDL3_VERSION 3.2.22)
 
-FetchContent_Declare(
-        SDL3
-        GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-        GIT_TAG        release-3.2.22
-)
-FetchContent_MakeAvailable(SDL3)
+find_package(SDL3 ${SDL3_VERSION} QUIET CONFIG)
+if (NOT SDL3_FOUND)
+    FetchContent_Declare(
+            SDL3
+            GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
+            GIT_TAG        release-3.2.22
+    )
+    FetchContent_MakeAvailable(SDL3)
+endif()
 
 add_executable(hello src/main.cpp)
 
