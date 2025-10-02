@@ -1,18 +1,23 @@
+#include <algorithm>
+#include <array>
+#include <cassert>
+#include <cmath>
+#include <functional>
 #include <memory>
 #include <print>
+#include <ranges>
 #include <stdexcept>
-#include <cmath>
 #include <unordered_map>
-#include <functional>
+
 #include <SDL3/SDL.h>
 
 #include "helpers.hpp"
 
-std::unordered_map<SDL_Keycode, std::function<void()>> keymap;
+std::unordered_map<SDL_Keycode, std::function<void()> > keymap;
 
 class SdlGuard {
 public:
-    explicit SdlGuard(Uint32 flags) {
+    explicit SdlGuard(const Uint32 flags) {
         if (!SDL_Init(flags)) {
             throw std::runtime_error(SDL_GetError());
         }
@@ -31,6 +36,11 @@ public:
 
 using WindowPtr = std::unique_ptr<SDL_Window, decltype(&SDL_DestroyWindow)>;
 using RendererPtr = std::unique_ptr<SDL_Renderer, decltype(&SDL_DestroyRenderer)>;
+
+auto dispatchKey(const SDL_Keycode key) {
+    if (const auto it = keymap.find(key); it != keymap.end())
+        it->second();
+}
 
 int main() try {
     SdlGuard sdl{SDL_INIT_VIDEO};
@@ -55,11 +65,13 @@ int main() try {
 
     const auto startTicks{SDL_GetTicks()};
     auto running{true};
-    std::array<SDL_Vertex, 3> verts{};
+    std::array<SDL_Vertex, 3> vertices{};
     keymap = {
-        { SDLK_ESCAPE, [&running] { running = false; } },
-        { SDLK_Q,      [&running] { running = false; } },
+        {SDLK_ESCAPE, [&running] { running = false; }},
+        {SDLK_Q, [&running] { running = false; }},
     };
+
+    const auto aColor{hello::toFColor(200, 100, 50)};
 
     while (running) {
         SDL_Event e;
@@ -69,11 +81,8 @@ int main() try {
                     running = false;
                     break;
                 }
-                case SDL_EVENT_KEY_DOWN: {
-                    auto it = keymap.find(e.key.key);
-                    if (it != keymap.end()) {
-                        it->second();
-                    }
+                case SDL_EVENT_KEY_DOWN: [[likely]] {
+                    dispatchKey(e.key.key);
                     break;
                 }
                 default:
@@ -81,30 +90,33 @@ int main() try {
             }
         }
         const auto ren{renderer.get()};
-
         const auto t{(static_cast<float>(SDL_GetTicks() - startTicks)) / 1000.0f};
         const auto angle{t};
-        const auto [windowWidth, windowHeight] = hello::getWindowSize(window.get());
+        const auto [w, h]{hello::getWindowSize(window.get())};
 
-        SDL_FPoint base[3] = {
-            {0.f, -100.f},
-            {-100.f, 100.f},
-            {100.f, 100.f}
+        constexpr std::array base{
+            SDL_FPoint{0.f, -100.f},
+            SDL_FPoint{-100.f, 100.f},
+            SDL_FPoint{100.f, 100.f}
         };
         SDL_SetRenderDrawColor(ren, 30, 30, 30, 255);
         SDL_RenderClear(ren);
 
-        float cx{windowWidth / 2.0f}, cy{windowHeight / 2.0f};
-        for (int i = 0; i < 3; i++) {
-            float x{base[i].x * cos(angle) - base[i].y * sin(angle)};
-            float y{base[i].x * sin(angle) + base[i].y * cos(angle)};
-            verts[i].position.x = cx + x;
-            verts[i].position.y = cy + y;
-            verts[i].color = hello::toFColor(200, 100, 50);
-            verts[i].tex_coord = {0.f, 0.f};
-        }
+        const float cx{static_cast<float>(w) / 2.0f}, cy{static_cast<float>(h) / 2.0f};
+        const auto _sin = std::sin(angle);
+        const auto _cos = std::cos(angle);
+        std::ranges::for_each(std::views::iota(static_cast<size_t>(0), base.size()), [&](const auto i) {
+            assert(i < base.size());
+            const auto [x,y] = base[i];
+            const float fx{x * _cos - y * _sin};
+            const float fy{x * _sin + y * _cos};
+            vertices[i].position.x = cx + fx;
+            vertices[i].position.y = cy + fy;
+            vertices[i].color = aColor;
+            vertices[i].tex_coord = {0.f, 0.f};
+        });
 
-        SDL_RenderGeometry(ren, nullptr, verts.data(), verts.size(), nullptr, 0);
+        SDL_RenderGeometry(ren, nullptr, vertices.data(), vertices.size(), nullptr, 0);
         SDL_RenderPresent(ren);
         SDL_Delay(16);
     }
